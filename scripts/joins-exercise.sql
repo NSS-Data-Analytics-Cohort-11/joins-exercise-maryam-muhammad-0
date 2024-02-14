@@ -33,37 +33,50 @@ ORDER BY rev.worldwide_gross DESC;
 -- Your result set should include all of the distributors, whether or not they have any movies in the movies table.
 SELECT d.company_name,COUNT(s.*)
 FROM distributors AS d
-INNER JOIN specs AS s
+LEFT JOIN specs AS s
 ON (d.distributor_id = s.domestic_distributor_id)
 GROUP BY d.company_name;
 -- 5. Write a query that returns the five distributors with the highest average movie budget.
-SELECT d.company_name,avg(film_budget)
+SELECT d.company_name,avg(r.film_budget)
 FROM distributors AS d
 LEFT JOIN specs AS s
 ON (d.distributor_id = s.domestic_distributor_id)
 LEFT JOIN revenue AS r
 ON (s.movie_id = r.movie_id)
-GROUP BY d.company_name;
+GROUP BY d.company_name
+ORDER BY avg(r.film_budget) DESC
+LIMIT 5;
 -- 6a. How many movies in the dataset are distributed by a company which is not headquartered in California? (419)
 SELECT COUNT(*)
 FROM specs AS s
 LEFT JOIN distributors AS d
 ON (s.domestic_distributor_id = d.distributor_id)
-WHERE d.headquarters != 'CA';
--- 6b. Which of these movies has the highest imdb rating? (The Dark Knight)
+WHERE d.headquarters NOT LIKE '%CA';
+-- 6b. Which of these movies has the highest imdb rating? (Dirty Dancing)
 SELECT *
 FROM specs AS s
 LEFT JOIN distributors AS d
 ON (s.domestic_distributor_id = d.distributor_id)
 LEFT JOIN rating AS r
 ON (s.movie_id = r.movie_id)
-WHERE d.headquarters != 'CA'
+WHERE d.headquarters NOT LIKE '%CA'
 ORDER BY r.imdb_rating DESC
 LIMIT 1;
 -- 7b. Which have a higher average rating
 -- movies which are over two hours long or movies which are under two hours?
-SELECT s.length_in_min/60, AVG(r.imdb_rating)
-FROM specs AS s
-LEFT JOIN rating AS r
-ON (s.movie_id = r.movie_id)
-GROUP BY s.length_in_min/60;
+-- SELECT s.length_in_min/60, AVG(r.imdb_rating) 
+-- FROM specs AS s
+-- LEFT JOIN rating AS r
+-- ON (s.movie_id = r.movie_id)
+-- GROUP BY s.length_in_min/60;
+
+SELECT 
+CASE
+	WHEN length_in_min >= 120 THEN '>2 Hours'
+	ELSE '<2 Hours'
+END AS lengthtext, ROUND(avg(imdb_rating), 2) AS avg_rating
+FROM specs
+INNER JOIN rating
+USING (movie_id)
+GROUP BY lengthtext
+ORDER BY avg_rating DESC;
